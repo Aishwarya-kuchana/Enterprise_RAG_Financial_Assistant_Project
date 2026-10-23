@@ -1,48 +1,22 @@
 import json
 import re
-
 from langchain_core.prompts import ChatPromptTemplate
-
-
 class RAGChain:
-
-    """
-    Handles:
-
-    1. LLM-based query understanding
-    2. Company and year detection
-    3. Retrieval query generation
-    4. Document retrieval
-    5. Context creation
-    6. Grounded LLM answer generation
-    """
-
     def __init__(self, retriever, llm):
-
         self.retriever = retriever
         self.llm = llm
-
-        # ==================================================
-        # QUERY UNDERSTANDING PROMPT
-        # ==================================================
-
         self.query_analysis_prompt = ChatPromptTemplate.from_template(
             """
 You are a financial query-understanding system.
-
 Analyze the user's financial question BEFORE document retrieval.
-
 Your job is NOT to answer the question.
-
 Extract:
-
 1. intent
    - factual
    - comparison
    - trend
    - calculation
    - other
-
 2. companies
    - Identify ALL company names mentioned in the question.
    - Companies may belong to the permanent knowledge base OR
@@ -50,11 +24,9 @@ Extract:
    - Do NOT restrict companies to a predefined list.
    - Return the company names exactly as they appear in the
      question, using normal company names.
-
 3. year
    - Extract the four-digit year if explicitly mentioned.
    - If no year is mentioned, return null.
-
 4. financial_metric
    - Identify the financial concept the user is asking about.
    - Examples:
@@ -70,17 +42,14 @@ Extract:
      debt
      expenses
      etc.
-
 5. ambiguity
    - true if the financial term is ambiguous or could refer
      to multiple different financial concepts.
    - false if the requested metric is clear.
-
 6. clarification
    - If ambiguity is true, briefly explain what needs
      clarification.
    - Otherwise return null.
-
 7. retrieval_query
    - Create a concise retrieval-oriented query containing:
      companies, year, financial metric and useful financial
@@ -88,7 +57,6 @@ Extract:
    - The query should help retrieve relevant sections from
      annual reports.
    - Do not invent facts.
-
 IMPORTANT FINANCIAL LANGUAGE RULES:
 
 - Understand the meaning of the question, not just individual
@@ -140,11 +108,6 @@ USER QUESTION:
 {question}
 """
         )
-
-        # ==================================================
-        # FINAL RAG PROMPT
-        # ==================================================
-
         self.prompt = ChatPromptTemplate.from_template(
             """
 You are an expert Financial Intelligence Assistant.
@@ -199,88 +162,54 @@ USER QUESTION:
 ANSWER:
 """
         )
-
-    # ======================================================
-    # RESPONSE TEXT EXTRACTION
-    # ======================================================
-
     def _extract_text(self, response):
-
         content = response.content
-
         if isinstance(content, str):
             return content
-
         if isinstance(content, list):
-
             parts = []
-
             for item in content:
-
                 if isinstance(item, str):
                     parts.append(item)
-
                 elif isinstance(item, dict):
-
                     text = item.get(
                         "text",
                         ""
                     )
-
                     if text:
                         parts.append(text)
-
             return "".join(parts)
-
         return str(content)
-
-    # ======================================================
-    # QUERY ANALYSIS
-    # ======================================================
-
+    
     def analyze_question(self, question):
-
-        """
-        Uses the LLM to understand the user's question
-        before retrieval.
-        """
-
         prompt = self.query_analysis_prompt.invoke(
             {
                 "question": question
             }
         )
-
         response = self.llm.invoke(
             prompt
         )
-
         text = self._extract_text(
             response
         ).strip()
-
-        # Remove markdown JSON fences if Gemini adds them
+        
         text = re.sub(
             r"```json\s*",
             "",
             text,
             flags=re.IGNORECASE
         )
-
         text = re.sub(
             r"```\s*$",
             "",
             text
         )
-
         try:
-
             analysis = json.loads(
                 text
             )
-
         except json.JSONDecodeError:
-
             analysis = {
                 "intent": "factual",
                 "companies": [],
@@ -290,23 +219,10 @@ ANSWER:
                 "clarification": None,
                 "retrieval_query": question
             }
-
         return analysis
-
-    # ======================================================
-    # COMPANY DETECTION FALLBACK
-    # ======================================================
-
+    
     def detect_companies(self, question):
-
-        """
-        Fallback detection for the permanent companies.
-
-        The LLM is the primary company detector.
-        """
-
         question_lower = question.lower()
-
         company_mapping = {
             "alphabet": "Alphabet",
             "amazon": "Amazon",
@@ -314,68 +230,41 @@ ANSWER:
             "microsoft": "Microsoft",
             "nvidia": "NVIDIA"
         }
-
         detected_companies = []
-
         for name, metadata_name in company_mapping.items():
-
             if name in question_lower:
-
                 detected_companies.append(
                     metadata_name
                 )
-
         return detected_companies
-
-    # ======================================================
-    # YEAR DETECTION FALLBACK
-    # ======================================================
-
+    
     def detect_year(self, question):
-
         match = re.search(
             r"\b(20\d{2})\b",
             question
         )
-
         if match:
-
             return int(
                 match.group(1)
             )
-
         return None
-
-    # ======================================================
-    # RETRIEVAL QUERY
-    # ======================================================
-
+    
     def create_retrieval_query(self, question):
-
         """
         Uses LLM-based query understanding to create
         a retrieval-oriented query.
         """
-
         analysis = self.analyze_question(
             question
         )
-
         retrieval_query = analysis.get(
             "retrieval_query"
         )
-
         if not retrieval_query:
             return question
-
         return retrieval_query
 
-    # ======================================================
-    # RETRIEVE DOCUMENTS
-    # ======================================================
-
     def retrieve_documents(self, question):
-
         """
         Complete query understanding + retrieval process.
         """
@@ -383,52 +272,38 @@ ANSWER:
         analysis = self.analyze_question(
             question
         )
-
         if analysis.get(
             "ambiguous",
             False
         ):
-
             return {
                 "documents": [],
                 "analysis": analysis
             }
-
         retrieval_query = analysis.get(
             "retrieval_query",
             question
         )
-
         if not retrieval_query:
             retrieval_query = question
-
         companies = analysis.get(
             "companies",
             []
         )
-
         if not companies:
-
             companies = self.detect_companies(
                 question
             )
-
         year = analysis.get(
             "year"
         )
-
         if year is None:
 
             year = self.detect_year(
                 question
             )
-
-        # --------------------------------------------------
-        # Multi-company
-        # --------------------------------------------------
-
+        
         if len(companies) >= 2:
-
             documents = (
                 self.retriever.retrieve_for_entities(
                     query=retrieval_query,
@@ -437,13 +312,8 @@ ANSWER:
                     k_per_entity=10
                 )
             )
-
-        # --------------------------------------------------
-        # Single company
-        # --------------------------------------------------
-
+        
         elif len(companies) == 1:
-
             documents = (
                 self.retriever.retrieve(
                     query=retrieval_query,
@@ -453,13 +323,8 @@ ANSWER:
                     candidate_k=100
                 )
             )
-
-        # --------------------------------------------------
-        # General
-        # --------------------------------------------------
-
+        
         else:
-
             documents = (
                 self.retriever.retrieve(
                     query=retrieval_query,
@@ -467,66 +332,47 @@ ANSWER:
                     candidate_k=100
                 )
             )
-
         return {
             "documents": documents,
             "analysis": analysis
         }
-
-    # ======================================================
-    # CREATE STRUCTURED CONTEXT
-    # ======================================================
-
+    
     def create_context(self, documents):
-
         company_documents = {}
-
         for doc in documents:
-
             company = doc.metadata.get(
                 "company",
                 "Uploaded Document"
             )
-
             if company not in company_documents:
                 company_documents[company] = []
-
             company_documents[
                 company
             ].append(doc)
-
         context_parts = []
-
         for company, docs in (
             company_documents.items()
         ):
-
             context_parts.append(
                 f"\n========== {company.upper()} ==========\n"
             )
-
             for i, doc in enumerate(
                 docs,
                 1
             ):
-
                 metadata = doc.metadata
-
                 year = metadata.get(
                     "year",
                     "Unknown"
                 )
-
                 source = metadata.get(
                     "source",
                     "Unknown"
                 )
-
                 page = metadata.get(
                     "page",
                     "Unknown"
                 )
-
                 context_parts.append(
                     f"""
 Document {i}
@@ -534,7 +380,6 @@ Company: {company}
 Year: {year}
 Source: {source}
 Page: {page}
-
 Content:
 {doc.page_content}
 """
@@ -543,81 +388,39 @@ Content:
         return "\n\n".join(
             context_parts
         )
-
-    # ======================================================
-    # COMPLETE RAG PIPELINE
-    # ======================================================
-
+    
     def ask(self, question):
-
-        """
-        Complete RAG pipeline:
-
-        User Question
-              ↓
-        LLM Query Understanding
-              ↓
-        Intent / Company / Year / Metric
-              ↓
-        Retrieval Query
-              ↓
-        Retrieval
-              ↓
-        CrossEncoder Reranking
-              ↓
-        Structured Context
-              ↓
-        Gemini
-              ↓
-        Final Grounded Answer
-        """
-
         retrieval_result = (
             self.retrieve_documents(
                 question
             )
         )
-
         documents = retrieval_result[
             "documents"
         ]
-
         analysis = retrieval_result[
             "analysis"
         ]
-
-        # --------------------------------------------------
-        # Ambiguous question
-        # --------------------------------------------------
-
+        
         if analysis.get(
             "ambiguous",
             False
         ):
-
             clarification = analysis.get(
                 "clarification"
             )
-
             if not clarification:
-
                 clarification = (
                     "Could you clarify which financial "
                     "metric you mean?"
                 )
-
             return {
                 "answer": clarification,
                 "documents": [],
                 "analysis": analysis
             }
-
-        # --------------------------------------------------
-        # No documents
-        # --------------------------------------------------
-
+        
         if not documents:
-
             return {
                 "answer": (
                     "I couldn't find this information "
@@ -626,34 +429,23 @@ Content:
                 "documents": [],
                 "analysis": analysis
             }
-
-        # --------------------------------------------------
-        # Create context
-        # --------------------------------------------------
-
+        
         context = self.create_context(
             documents
         )
-
-        # --------------------------------------------------
-        # Final answer
-        # --------------------------------------------------
-
+        
         prompt = self.prompt.invoke(
             {
                 "context": context,
                 "question": question
             }
         )
-
         response = self.llm.invoke(
             prompt
         )
-
         answer = self._extract_text(
             response
         )
-
         return {
             "answer": answer,
             "documents": documents,
