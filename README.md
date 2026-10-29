@@ -27,8 +27,8 @@ Users can also upload additional financial reports dynamically and ask questions
 ## 🚀 Live Demo
 
 🔗 **Try the application here:**  
-[Enterprise Financial RAG Assistant]:https://enterpriseragfinancialassistantproject-pjbc3ufxkawximnvsfi4ie.streamlit.app/
-
+[Enterprise Financial RAG Assistant]:[https://enterpriseragfinancialassistantproject-pjbc3ufxkawximnvsfi4ie.streamlit.app/
+](https://enterpriseragfinancialassistantproject-pjbc3ufxkawximnvsfi4ie.streamlit.app/)
 ---
 
 ## ✨ Key Features
