@@ -149,9 +149,18 @@ IMPORTANT RULES:
 when the requested information genuinely cannot be found
 in the provided context.
 
-11. Keep the answer clear and concise.
+11. Write the answer as a complete, grammatically correct sentence. Never return only a number or currency value.
 
-12. Include units such as million or billion when available.
+12. When the context supports it, explicitly identify the company, financial metric, reporting year, and value.
+
+13. Preserve the units used in the financial report. If the report states that figures are in millions, make this clear in the answer.
+
+14. You may convert millions to billions when useful, but ensure the conversion is mathematically correct.
+
+15. Keep the answer concise and do not repeat unnecessary information.
+
+16. Do not invent missing details. If the context does not support identifying the metric, company, reporting year, or value, state only what can be verified from the context.
+
 
 CONTEXT:
 {context}
