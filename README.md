@@ -2,7 +2,7 @@
 
 An intelligent **Retrieval-Augmented Generation (RAG)** application designed to answer financial questions from company annual reports. The system retrieves relevant information from financial documents and uses a Large Language Model (LLM) to generate context-aware responses.
 
-🔗 **Live Application:** [Enterprise Financial RAG Assistant](YOUR_STREAMLIT_LINK_HERE)
+🔗 **Live Application:** [http://localhost:8501/](YOUR_STREAMLIT_LINK_HERE)
 
 ---
 

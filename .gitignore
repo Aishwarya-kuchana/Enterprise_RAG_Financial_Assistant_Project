@@ -9,3 +9,24 @@ env/
 .DS_Store
 Thumbs.db
 .streamlit/secrets.toml
+
+# Python virtual environments
+.venv/
+.venv_repaired/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables and secrets
+.env
+
+# IDE settings
+.vscode/
+
+# Generated indexes and model artifacts
+*.pkl
+*.faiss
+data/vector_db
